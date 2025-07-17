@@ -28,9 +28,28 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       addItem: (item) =>
-        set((state) => ({
-          items: [...state.items, { ...item, id: Date.now() }],
-        })),
+        set((state) => {
+          // Check if item with same name, size, and toppings already exists
+          const existingItemIndex = state.items.findIndex(
+            (existingItem) =>
+              existingItem.name === item.name &&
+              existingItem.size === item.size &&
+              JSON.stringify(existingItem.toppings.sort()) === JSON.stringify(item.toppings.sort())
+          )
+
+          if (existingItemIndex >= 0) {
+            // Item exists, increment quantity
+            const updatedItems = [...state.items]
+            updatedItems[existingItemIndex] = {
+              ...updatedItems[existingItemIndex],
+              quantity: updatedItems[existingItemIndex].quantity + item.quantity,
+            }
+            return { items: updatedItems }
+          } else {
+            // Item doesn't exist, add new item
+            return { items: [...state.items, { ...item, id: Date.now() }] }
+          }
+        }),
       removeItem: (id) =>
         set((state) => ({
           items: state.items.filter((item) => item.id !== id),

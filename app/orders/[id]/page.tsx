@@ -299,7 +299,7 @@ export default function LiveOrderTrackingPage({ params }: { params: { id: string
                                 ? "Non-Veg"
                                 : "Beverage"}
                           </Badge>
-                          <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
+                          <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md text-sm font-semibold text-blue-800">Qty: {item.quantity}</span>
                         </div>
                       </div>
                       <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>

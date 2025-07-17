@@ -28,7 +28,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const productData = await request.json()
+    
+    // Validate required fields
+    if (!productData.name || !productData.description || !productData.basePrice) {
+      return NextResponse.json({ 
+        error: "Missing required fields: name, description, and basePrice are required" 
+      }, { status: 400 })
+    }
+    
+    if (productData.basePrice <= 0) {
+      return NextResponse.json({ 
+        error: "Base price must be greater than 0" 
+      }, { status: 400 })
+    }
+    
+    console.log("Creating product with data:", productData)
+    
     const newProduct = await addProduct(productData)
+    
+    console.log("Product created successfully:", newProduct)
+    
     return NextResponse.json(newProduct, { status: 201 })
   } catch (error) {
     console.error("Error creating product:", error)

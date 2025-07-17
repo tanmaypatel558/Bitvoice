@@ -108,7 +108,7 @@ export default function CartPage() {
           <div className="flex items-center space-x-2">
             <ShoppingCart className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Your Cart</h1>
-            <span className="text-muted-foreground">({items.length} items)</span>
+            <span className="text-muted-foreground">({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
           </div>
 
           {/* Filter Section */}
@@ -281,17 +281,19 @@ export default function CartPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-10 w-10 p-0 border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200"
                               onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                             >
-                              <Minus className="h-4 w-4" />
+                              <Minus className="h-4 w-4 text-orange-600" />
                             </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
+                            <span className="w-12 h-10 flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg text-lg font-bold text-orange-800 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 select-none">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-10 w-10 p-0 border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-4 w-4 text-orange-600" />
                             </Button>
                           </div>
                           <div className="flex items-center space-x-4">
@@ -321,7 +323,7 @@ export default function CartPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
-                    <span>Subtotal ({items.length} items)</span>
+                    <span>Subtotal ({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">

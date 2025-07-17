@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useCartStore } from "@/lib/store"
 import { toast } from "sonner"
+import { useNotifications } from "@/components/providers/notification-provider"
 
 const pizzaData = {
   1: {
@@ -47,6 +48,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [selectedToppings, setSelectedToppings] = useState<string[]>([])
   const [quantity, setQuantity] = useState(1)
   const { addItem } = useCartStore()
+  const notifications = useNotifications()
 
   const pizza = pizzaData[1] // In a real app, you'd fetch based on params.id
 
@@ -87,7 +89,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
 
     addItem(cartItem)
-    toast.success(`${pizza.name} added to cart!`)
+    notifications.success(`${pizza.name} added to cart!`, "Pizza Added")
   }
 
   return (
@@ -189,12 +191,22 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <div className="flex items-center space-x-4">
                 <Label>Quantity:</Label>
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
-                    <Minus className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 w-10 p-0 border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  >
+                    <Minus className="h-4 w-4 text-orange-600" />
                   </Button>
-                  <span className="w-8 text-center">{quantity}</span>
-                  <Button variant="outline" size="sm" onClick={() => setQuantity(quantity + 1)}>
-                    <Plus className="h-4 w-4" />
+                  <span className="w-12 h-10 flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg text-lg font-bold text-orange-800 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 select-none">{quantity}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 w-10 p-0 border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4 text-orange-600" />
                   </Button>
                 </div>
               </div>

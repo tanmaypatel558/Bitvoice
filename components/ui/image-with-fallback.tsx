@@ -9,6 +9,7 @@ interface ImageWithFallbackProps {
   alt: string
   width?: number
   height?: number
+  fill?: boolean
   className?: string
   fallbackSrc?: string
 }
@@ -18,6 +19,7 @@ export function ImageWithFallback({
   alt,
   width = 200,
   height = 200,
+  fill = false,
   className = "",
   fallbackSrc = "/placeholder.svg"
 }: ImageWithFallbackProps) {
@@ -36,22 +38,35 @@ export function ImageWithFallback({
     return (
       <div 
         className={`flex items-center justify-center bg-muted ${className}`}
-        style={{ width, height }}
+        style={fill ? { position: 'absolute', inset: 0 } : { width, height }}
       >
         <ImageIcon className="h-8 w-8 text-muted-foreground" />
       </div>
     )
   }
 
+  const imageProps = fill 
+    ? {
+        src: imageSrc,
+        alt,
+        fill: true,
+        className,
+        onError: handleError,
+        priority: false,
+      }
+    : {
+        src: imageSrc,
+        alt,
+        width,
+        height,
+        className,
+        onError: handleError,
+        priority: false,
+      }
+
   return (
     <Image
-      src={imageSrc}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      onError={handleError}
-      priority={false}
+      {...imageProps}
     />
   )
 } 

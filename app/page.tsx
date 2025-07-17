@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Plus, ShoppingCart, Star, Clock, MapPin } from "lucide-react"
+import { Plus, ShoppingCart, Star, Clock, MapPin, Phone, Mail, ChefHat } from "lucide-react"
 import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 
 import { Button } from "@/components/ui/button"
@@ -13,16 +13,24 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCartStore } from "@/lib/store"
 import { toast } from "sonner"
+import { useNotifications } from "@/components/providers/notification-provider"
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [pizzas, setPizzas] = useState<any[]>([])
   const [drinks, setDrinks] = useState<any[]>([])
+  const [showStoreInfo, setShowStoreInfo] = useState(false)
   const { addItem, items } = useCartStore()
-  const cartItems = items.length
+  const cartItems = items.reduce((total, item) => total + item.quantity, 0)
+  const notifications = useNotifications()
 
   useEffect(() => {
     fetchProducts()
+    // Trigger store info slide-in animation after a short delay
+    const timer = setTimeout(() => {
+      setShowStoreInfo(true)
+    }, 800)
+    return () => clearTimeout(timer)
   }, [])
 
   const fetchProducts = async () => {
@@ -60,7 +68,7 @@ export default function HomePage() {
     }
 
     addItem(cartItem)
-    toast.success(`${drink.name} added to cart!`)
+    notifications.success(`${drink.name} added to cart!`, "Item Added")
   }
 
   return (
@@ -81,13 +89,164 @@ export default function HomePage() {
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Cart
                 {cartItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">{cartItems}</Badge>
+                  <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 text-xs font-bold bg-gradient-to-br from-red-500 to-orange-500 text-white border-2 border-white shadow-lg hover:scale-110 transition-transform duration-200">{cartItems}</Badge>
                 )}
               </Button>
             </Link>
           </div>
         </div>
       </header>
+
+      {/* Store Info Section */}
+      <section className={`bg-gradient-to-r from-orange-50 to-red-50 border-b transition-all duration-1000 ease-out ${
+        showStoreInfo ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-4'
+      }`}>
+        <div className="container px-4 py-6">
+          {/* Photo Gallery */}
+          <div className={`mb-6 transition-all duration-700 ${
+            showStoreInfo ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'
+          }`} style={{ transitionDelay: '100ms' }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+                <ImageWithFallback
+                  src="/uploads/1752759191596-pexels-brettjordan-825661.jpg"
+                  alt="Pizza Restaurant Interior"
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors duration-300"></div>
+              </div>
+              <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+                <ImageWithFallback
+                  src="/uploads/1752759155414-top-view-pizzas-cement-background.jpg"
+                  alt="Fresh Pizzas"
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors duration-300"></div>
+              </div>
+              <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+                <ImageWithFallback
+                  src="/uploads/1752759183832-crispy-mixed-pizza-with-olives-sausage.jpg"
+                  alt="Delicious Pizza"
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors duration-300"></div>
+              </div>
+              <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+                <ImageWithFallback
+                  src="/uploads/1752756719978-pexels-donaldtong94-39720.jpg"
+                  alt="Restaurant Ambiance"
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors duration-300"></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Location */}
+            <div className={`relative overflow-hidden rounded-lg bg-white/70 backdrop-blur-sm border border-white/50 shadow-sm hover:shadow-md transition-all duration-500 ${
+              showStoreInfo ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-8'
+            }`} style={{ transitionDelay: '200ms' }}>
+              <div className="absolute inset-0 opacity-10">
+                <ImageWithFallback
+                  src="/uploads/1752759191596-pexels-brettjordan-825661.jpg"
+                  alt="Location Background"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative flex items-start space-x-3 p-4">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <MapPin className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Location</h3>
+                  <p className="text-sm text-gray-600">123 Pizza Street</p>
+                  <p className="text-sm text-gray-600">New York, NY 10001</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Hours */}
+            <div className={`relative overflow-hidden rounded-lg bg-white/70 backdrop-blur-sm border border-white/50 shadow-sm hover:shadow-md transition-all duration-500 ${
+              showStoreInfo ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-8'
+            }`} style={{ transitionDelay: '400ms' }}>
+              <div className="absolute inset-0 opacity-10">
+                <ImageWithFallback
+                  src="/uploads/1752759155414-top-view-pizzas-cement-background.jpg"
+                  alt="Hours Background"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative flex items-start space-x-3 p-4">
+                <div className="bg-orange-100 p-2 rounded-full">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Hours</h3>
+                  <p className="text-sm text-gray-600">Mon-Thu: 11AM - 10PM</p>
+                  <p className="text-sm text-gray-600">Fri-Sat: 11AM - 11PM</p>
+                  <p className="text-sm text-gray-600">Sun: 12PM - 9PM</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className={`relative overflow-hidden rounded-lg bg-white/70 backdrop-blur-sm border border-white/50 shadow-sm hover:shadow-md transition-all duration-500 ${
+              showStoreInfo ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-8'
+            }`} style={{ transitionDelay: '600ms' }}>
+              <div className="absolute inset-0 opacity-10">
+                <ImageWithFallback
+                  src="/uploads/1752759183832-crispy-mixed-pizza-with-olives-sausage.jpg"
+                  alt="Contact Background"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative flex items-start space-x-3 p-4">
+                <div className="bg-green-100 p-2 rounded-full">
+                  <Phone className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Contact</h3>
+                  <p className="text-sm text-gray-600">📞 (555) 123-PIZZA</p>
+                  <p className="text-sm text-gray-600">✉️ info@pizzashop.com</p>
+                  <p className="text-sm text-gray-600">🚚 Free delivery over $25</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Special Features */}
+          <div className={`mt-6 pt-4 border-t border-orange-200 transition-all duration-700 ${
+            showStoreInfo ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'
+          }`} style={{ transitionDelay: '800ms' }}>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+              <div className="flex items-center space-x-2 hover:scale-105 transition-transform duration-200">
+                <ChefHat className="h-4 w-4 text-red-600" />
+                <span className="text-gray-700">Fresh ingredients daily</span>
+              </div>
+              <div className="flex items-center space-x-2 hover:scale-105 transition-transform duration-200">
+                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                <span className="text-gray-700">4.8/5 customer rating</span>
+              </div>
+              <div className="flex items-center space-x-2 hover:scale-105 transition-transform duration-200">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <span className="text-gray-700">30-minute delivery guarantee</span>
+              </div>
+              <div className="flex items-center space-x-2 hover:scale-105 transition-transform duration-200">
+                <MapPin className="h-4 w-4 text-green-600" />
+                <span className="text-gray-700">5-mile delivery radius</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-red-500 to-orange-500 text-white py-12">
