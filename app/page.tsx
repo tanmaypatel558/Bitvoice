@@ -109,7 +109,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/uploads/1752759191596-pexels-brettjordan-825661.jpg"
+                  src="/placeholder.jpg"
                   alt="Pizza Restaurant Interior"
                   fill
                   className="object-cover"
@@ -118,7 +118,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/uploads/1752759155414-top-view-pizzas-cement-background.jpg"
+                  src="/placeholder.jpg"
                   alt="Fresh Pizzas"
                   fill
                   className="object-cover"
@@ -127,7 +127,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/uploads/1752759183832-crispy-mixed-pizza-with-olives-sausage.jpg"
+                  src="/placeholder.jpg"
                   alt="Delicious Pizza"
                   fill
                   className="object-cover"
@@ -136,7 +136,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/uploads/1752756719978-pexels-donaldtong94-39720.jpg"
+                  src="/placeholder.jpg"
                   alt="Restaurant Ambiance"
                   fill
                   className="object-cover"
@@ -153,7 +153,7 @@ export default function HomePage() {
             }`} style={{ transitionDelay: '200ms' }}>
               <div className="absolute inset-0 opacity-10">
                 <ImageWithFallback
-                  src="/uploads/1752759191596-pexels-brettjordan-825661.jpg"
+                  src="/placeholder.jpg"
                   alt="Location Background"
                   fill
                   className="object-cover"
@@ -177,7 +177,7 @@ export default function HomePage() {
             }`} style={{ transitionDelay: '400ms' }}>
               <div className="absolute inset-0 opacity-10">
                 <ImageWithFallback
-                  src="/uploads/1752759155414-top-view-pizzas-cement-background.jpg"
+                  src="/placeholder.jpg"
                   alt="Hours Background"
                   fill
                   className="object-cover"
@@ -202,7 +202,7 @@ export default function HomePage() {
             }`} style={{ transitionDelay: '600ms' }}>
               <div className="absolute inset-0 opacity-10">
                 <ImageWithFallback
-                  src="/uploads/1752759183832-crispy-mixed-pizza-with-olives-sausage.jpg"
+                  src="/placeholder.jpg"
                   alt="Contact Background"
                   fill
                   className="object-cover"

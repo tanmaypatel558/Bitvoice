@@ -28,3 +28,7 @@ next-env.d.ts
 
 # data directory - contains user data
 /data/
+
+# uploads directory - large images that cause deployment issues
+/public/uploads/
+!/public/uploads/.gitkeep
