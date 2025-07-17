@@ -11,22 +11,126 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { useCartStore } from "@/lib/store"
+import { useNotifications } from "@/components/providers/notification-provider"
+import { useRouter } from "next/navigation"
 
 export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("card")
   const [deliveryMethod, setDeliveryMethod] = useState("delivery")
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    instructions: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    cardName: ""
+  })
 
-  const orderSummary = {
-    subtotal: 66.97,
-    deliveryFee: 3.99,
-    tax: 5.36,
-    total: 76.32,
+  const { items, getTotalPrice, clearCart } = useCartStore()
+  const { success, error } = useNotifications()
+  const router = useRouter()
+
+  const subtotal = getTotalPrice()
+  const deliveryFee = deliveryMethod === "delivery" ? 3.99 : 0
+  const tax = subtotal * 0.08
+  const total = subtotal + deliveryFee + tax
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handlePlaceOrder = () => {
-    // In a real app, you'd process the payment and create the order
-    // For now, we'll redirect to a mock order tracking page
-    window.location.href = "/orders/12345"
+  const validateForm = () => {
+    if (items.length === 0) {
+      error("Your cart is empty")
+      return false
+    }
+
+    if (deliveryMethod === "delivery") {
+      if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zip) {
+        error("Please fill in all delivery information")
+        return false
+      }
+    }
+
+    if (paymentMethod === "card") {
+      if (!formData.cardNumber || !formData.expiry || !formData.cvv || !formData.cardName) {
+        error("Please fill in all card information")
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const handlePlaceOrder = async () => {
+    if (!validateForm()) return
+
+    setIsPlacingOrder(true)
+
+    try {
+      const orderData = {
+        customerName: `${formData.firstName} ${formData.lastName}`,
+        customerPhone: formData.phone,
+        customerAddress: deliveryMethod === "delivery" 
+          ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`
+          : "Store Pickup",
+        items: items.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          type: item.type,
+          size: item.size,
+          toppings: item.toppings,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+          basePrice: item.basePrice
+        })),
+        total: total,
+        deliveryAddress: deliveryMethod === "delivery" 
+          ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`
+          : "Store Pickup",
+        paymentMethod: paymentMethod === "card" ? "Credit Card" : "Cash on Delivery",
+        notes: formData.instructions || undefined
+      }
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to place order")
+      }
+
+      const newOrder = await response.json()
+      
+      // Clear cart after successful order
+      clearCart()
+      
+      // Show success notification
+      success("Order placed successfully!")
+      
+      // Redirect to order tracking page
+      router.push(`/orders/${newOrder.id}`)
+      
+    } catch (err) {
+      console.error("Error placing order:", err)
+      error("Failed to place order. Please try again.")
+    } finally {
+      setIsPlacingOrder(false)
+    }
   }
 
   return (
@@ -84,38 +188,127 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="John" />
+                      <Input 
+                        id="firstName" 
+                        placeholder="John" 
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Doe" />
+                      <Input 
+                        id="lastName" 
+                        placeholder="Doe" 
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      />
                     </div>
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="+1 (555) 123-4567" />
+                    <Input 
+                      id="phone" 
+                      placeholder="+1 (555) 123-4567" 
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="address">Street Address</Label>
-                    <Input id="address" placeholder="123 Main Street" />
+                    <Input 
+                      id="address" 
+                      placeholder="123 Main Street" 
+                      value={formData.address}
+                      onChange={(e) => handleInputChange("address", e.target.value)}
+                    />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="city">City</Label>
-                      <Input id="city" placeholder="New York" />
+                      <Input 
+                        id="city" 
+                        placeholder="New York" 
+                        value={formData.city}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="state">State</Label>
-                      <Input id="state" placeholder="NY" />
+                      <Input 
+                        id="state" 
+                        placeholder="NY" 
+                        value={formData.state}
+                        onChange={(e) => handleInputChange("state", e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="zip">ZIP Code</Label>
-                      <Input id="zip" placeholder="10001" />
+                      <Input 
+                        id="zip" 
+                        placeholder="10001" 
+                        value={formData.zip}
+                        onChange={(e) => handleInputChange("zip", e.target.value)}
+                      />
                     </div>
                   </div>
                   <div>
                     <Label htmlFor="instructions">Delivery Instructions (Optional)</Label>
-                    <Textarea id="instructions" placeholder="Ring the doorbell, leave at door, etc." />
+                    <Textarea 
+                      id="instructions" 
+                      placeholder="Ring the doorbell, leave at door, etc." 
+                      value={formData.instructions}
+                      onChange={(e) => handleInputChange("instructions", e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Store Pickup Info */}
+            {deliveryMethod === "pickup" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input 
+                        id="firstName" 
+                        placeholder="John" 
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input 
+                        id="lastName" 
+                        placeholder="Doe" 
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      placeholder="+1 (555) 123-4567" 
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="instructions">Special Instructions (Optional)</Label>
+                    <Textarea 
+                      id="instructions" 
+                      placeholder="Any special requests..." 
+                      value={formData.instructions}
+                      onChange={(e) => handleInputChange("instructions", e.target.value)}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -145,21 +338,41 @@ export default function CheckoutPage() {
                   <div className="space-y-4 mt-4">
                     <div>
                       <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
+                      <Input 
+                        id="cardNumber" 
+                        placeholder="1234 5678 9012 3456" 
+                        value={formData.cardNumber}
+                        onChange={(e) => handleInputChange("cardNumber", e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" />
+                        <Input 
+                          id="expiry" 
+                          placeholder="MM/YY" 
+                          value={formData.expiry}
+                          onChange={(e) => handleInputChange("expiry", e.target.value)}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="cvv">CVV</Label>
-                        <Input id="cvv" placeholder="123" />
+                        <Input 
+                          id="cvv" 
+                          placeholder="123" 
+                          value={formData.cvv}
+                          onChange={(e) => handleInputChange("cvv", e.target.value)}
+                        />
                       </div>
                     </div>
                     <div>
                       <Label htmlFor="cardName">Name on Card</Label>
-                      <Input id="cardName" placeholder="John Doe" />
+                      <Input 
+                        id="cardName" 
+                        placeholder="John Doe" 
+                        value={formData.cardName}
+                        onChange={(e) => handleInputChange("cardName", e.target.value)}
+                      />
                     </div>
                   </div>
                 )}
@@ -174,28 +387,32 @@ export default function CheckoutPage() {
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Cart Items */}
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>{item.quantity}x {item.name}</span>
+                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <Separator />
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${orderSummary.subtotal.toFixed(2)}</span>
+                  <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span>${deliveryMethod === "delivery" ? orderSummary.deliveryFee.toFixed(2) : "0.00"}</span>
+                  <span>${deliveryFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax</span>
-                  <span>${orderSummary.tax.toFixed(2)}</span>
+                  <span>${tax.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>
-                    $
-                    {(deliveryMethod === "delivery"
-                      ? orderSummary.total
-                      : orderSummary.total - orderSummary.deliveryFee
-                    ).toFixed(2)}
-                  </span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
 
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-4">
@@ -203,8 +420,13 @@ export default function CheckoutPage() {
                   <span>Estimated delivery: 25-35 minutes</span>
                 </div>
 
-                <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                  Place Order
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handlePlaceOrder}
+                  disabled={isPlacingOrder || items.length === 0}
+                >
+                  {isPlacingOrder ? "Placing Order..." : "Place Order"}
                 </Button>
               </CardContent>
             </Card>

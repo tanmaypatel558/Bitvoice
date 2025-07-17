@@ -45,15 +45,9 @@ const sidebarItems = [
   },
   {
     title: "Orders",
-    href: "/admin/orders",
+    href: "/admin/tracking",
     icon: ShoppingCart,
     badge: "3",
-  },
-  {
-    title: "Order Tracking",
-    href: "/admin/tracking",
-    icon: Truck,
-    badge: null,
   },
   {
     title: "Analytics",
