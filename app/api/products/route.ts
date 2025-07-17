@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { filterProducts, addProduct } from "@/lib/db"
+import { filterProducts, addProduct } from "@/lib/vercel-db"
 
 export async function GET(request: NextRequest) {
   try {
