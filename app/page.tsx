@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Plus, ShoppingCart, Star, Clock, MapPin } from "lucide-react"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,6 +35,7 @@ export default function HomePage() {
       const pizzaData = await pizzaResponse.json()
       const drinkData = await drinkResponse.json()
 
+      console.log("Homepage - Loaded pizzas:", pizzaData.length, "drinks:", drinkData.length)
       setPizzas(pizzaData)
       setDrinks(drinkData)
     } catch (error) {
@@ -135,7 +137,7 @@ export default function HomePage() {
                   <Card key={pizza.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <CardHeader className="p-0">
                       <div className="relative">
-                        <Image
+                        <ImageWithFallback
                           src={pizza.image || "/placeholder.svg"}
                           alt={pizza.name}
                           width={200}
@@ -180,7 +182,7 @@ export default function HomePage() {
                 {drinks?.map((drink) => (
                   <Card key={drink.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <CardHeader className="p-0">
-                      <Image
+                      <ImageWithFallback
                         src={drink.image || "/placeholder.svg"}
                         alt={drink.name}
                         width={200}

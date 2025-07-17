@@ -14,8 +14,9 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Upload, Save, X } from "lucide-react"
+import { Plus, Edit, Trash2, Upload, Save, X, RefreshCw } from "lucide-react"
 import type { Product } from "@/lib/types"
+import { refreshCache } from "@/lib/vercel-db"
 
 const defaultToppings = [
   { id: "pepperoni", name: "Pepperoni", price: 2.5 },
@@ -58,12 +59,21 @@ export default function ProductManagement() {
 
   const fetchProducts = async () => {
     try {
+      // Force refresh cache
+      refreshCache()
+      
       const response = await fetch("/api/products")
       const data = await response.json()
+      console.log("Fetched products:", data.length, "items")
       setProducts(data)
     } catch (error) {
       console.error("Failed to fetch products:", error)
     }
+  }
+
+  const forceRefresh = async () => {
+    console.log("Force refreshing products...")
+    await fetchProducts()
   }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,13 +239,18 @@ export default function ProductManagement() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Product Management</h1>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" onClick={forceRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
@@ -477,6 +492,7 @@ export default function ProductManagement() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Tabs defaultValue="pizzas" className="space-y-6">

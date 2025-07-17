@@ -1,6 +1,6 @@
 import type { Product } from './types'
 
-// Default products data
+// Default products data - only used for initial setup
 const defaultProducts: Product[] = [
   {
     id: 1,
@@ -70,74 +70,104 @@ const defaultProducts: Product[] = [
   },
 ]
 
-// Storage key for localStorage
-const STORAGE_KEY = 'pizzahub_products'
+// Storage keys for different data types
+const STORAGE_KEYS = {
+  PRODUCTS: 'pizzahub_products_v2',
+  INITIALIZED: 'pizzahub_initialized_v2'
+}
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined'
 
-// Get products from localStorage or fallback to memory
-function getStoredProducts(): Product[] {
+// Global products cache
+let productsCache: Product[] | null = null
+let cacheTimestamp = 0
+const CACHE_DURATION = 1000 // 1 second cache for performance
+
+// Initialize database with default products if needed
+function initializeDatabase(): void {
+  if (!isBrowser) return
+
+  try {
+    const isInitialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED)
+    if (!isInitialized) {
+      // First time setup - save default products
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(defaultProducts))
+      localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true')
+      console.log('Database initialized with default products')
+    }
+  } catch (error) {
+    console.error('Failed to initialize database:', error)
+  }
+}
+
+// Get products from localStorage with proper error handling
+function loadProductsFromStorage(): Product[] {
   if (!isBrowser) {
     return [...defaultProducts]
   }
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    // Initialize if needed
+    initializeDatabase()
+
+    const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS)
     if (stored) {
       const parsed = JSON.parse(stored)
-      // Validate that it's an array and has at least some products
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
+      if (Array.isArray(parsed)) {
+        // Validate each product has required fields
+        const validProducts = parsed.filter(product => 
+          product && 
+          typeof product.id === 'number' && 
+          typeof product.name === 'string' &&
+          typeof product.basePrice === 'number' &&
+          typeof product.category === 'string'
+        )
+        
+        if (validProducts.length > 0) {
+          return validProducts
+        }
       }
     }
-  } catch (error) {
-    console.warn('Failed to load products from localStorage:', error)
-  }
 
-  // If no stored data or error, initialize with defaults
-  const products = [...defaultProducts]
-  if (isBrowser) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
-    } catch (error) {
-      console.warn('Failed to save products to localStorage:', error)
-    }
+    // If no valid data, return defaults and save them
+    console.log('No valid products found, using defaults')
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(defaultProducts))
+    return [...defaultProducts]
+  } catch (error) {
+    console.error('Failed to load products from localStorage:', error)
+    return [...defaultProducts]
   }
-  return products
 }
 
-// Save products to localStorage
-function saveProducts(products: Product[]): void {
-  if (!isBrowser) return
+// Save products to localStorage with error handling
+function saveProductsToStorage(products: Product[]): boolean {
+  if (!isBrowser) return false
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products))
+    return true
   } catch (error) {
-    console.warn('Failed to save products to localStorage:', error)
+    console.error('Failed to save products to localStorage:', error)
+    return false
   }
 }
 
-// In-memory cache for server-side rendering
-let productsCache: Product[] | null = null
-let lastUpdate = 0
-
-// Get all products
+// Get all products with caching
 export async function getProducts(): Promise<Product[]> {
-  // For client-side, always use localStorage
-  if (isBrowser) {
-    return getStoredProducts()
+  // Use cache if available and recent
+  if (productsCache && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    return [...productsCache]
   }
 
-  // For server-side, use cache with fallback
-  if (productsCache && Date.now() - lastUpdate < 5 * 60 * 1000) {
-    return productsCache
-  }
-
-  productsCache = [...defaultProducts]
-  lastUpdate = Date.now()
+  // Load from storage
+  const products = loadProductsFromStorage()
   
-  return productsCache
+  // Update cache
+  productsCache = [...products]
+  cacheTimestamp = Date.now()
+  
+  return products
 }
 
 // Get product by ID
@@ -157,16 +187,18 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
     ...productData,
     id: newId,
     available: productData.available ?? true,
+    images: productData.images || []
   }
   
-  products.push(newProduct)
+  // Add to array
+  const updatedProducts = [...products, newProduct]
   
-  // Update both cache and localStorage
-  if (isBrowser) {
-    saveProducts(products)
-  } else {
-    productsCache = products
-    lastUpdate = Date.now()
+  // Save to storage
+  const saved = saveProductsToStorage(updatedProducts)
+  if (saved) {
+    // Update cache
+    productsCache = [...updatedProducts]
+    cacheTimestamp = Date.now()
   }
   
   return newProduct
@@ -181,17 +213,20 @@ export async function updateProduct(id: number, updates: Partial<Product>): Prom
     return null
   }
   
-  products[productIndex] = { ...products[productIndex], ...updates }
+  // Update product
+  const updatedProduct = { ...products[productIndex], ...updates }
+  const updatedProducts = [...products]
+  updatedProducts[productIndex] = updatedProduct
   
-  // Update both cache and localStorage
-  if (isBrowser) {
-    saveProducts(products)
-  } else {
-    productsCache = products
-    lastUpdate = Date.now()
+  // Save to storage
+  const saved = saveProductsToStorage(updatedProducts)
+  if (saved) {
+    // Update cache
+    productsCache = [...updatedProducts]
+    cacheTimestamp = Date.now()
   }
   
-  return products[productIndex]
+  return updatedProduct
 }
 
 // Delete product
@@ -203,14 +238,15 @@ export async function deleteProduct(id: number): Promise<Product | null> {
     return null
   }
   
-  const deletedProduct = products.splice(productIndex, 1)[0]
+  const deletedProduct = products[productIndex]
+  const updatedProducts = products.filter(p => p.id !== id)
   
-  // Update both cache and localStorage
-  if (isBrowser) {
-    saveProducts(products)
-  } else {
-    productsCache = products
-    lastUpdate = Date.now()
+  // Save to storage
+  const saved = saveProductsToStorage(updatedProducts)
+  if (saved) {
+    // Update cache
+    productsCache = [...updatedProducts]
+    cacheTimestamp = Date.now()
   }
   
   return deletedProduct
@@ -234,10 +270,43 @@ export async function filterProducts(filters: {
   })
 }
 
-// Clear all products (for testing)
-export async function clearProducts(): Promise<void> {
-  if (isBrowser) {
-    localStorage.removeItem(STORAGE_KEY)
+// Clear all products and reset to defaults
+export async function resetToDefaults(): Promise<void> {
+  if (!isBrowser) return
+
+  try {
+    localStorage.removeItem(STORAGE_KEYS.PRODUCTS)
+    localStorage.removeItem(STORAGE_KEYS.INITIALIZED)
+    productsCache = null
+    
+    // Reinitialize
+    initializeDatabase()
+    
+    console.log('Database reset to defaults')
+  } catch (error) {
+    console.error('Failed to reset database:', error)
   }
+}
+
+// Get database statistics
+export async function getDbStats(): Promise<{
+  totalProducts: number
+  pizzas: number
+  drinks: number
+  storageUsed: number
+}> {
+  const products = await getProducts()
+  
+  return {
+    totalProducts: products.length,
+    pizzas: products.filter(p => p.category === 'pizza').length,
+    drinks: products.filter(p => p.category === 'drink').length,
+    storageUsed: isBrowser ? JSON.stringify(products).length : 0
+  }
+}
+
+// Force cache refresh
+export function refreshCache(): void {
   productsCache = null
+  cacheTimestamp = 0
 } 
