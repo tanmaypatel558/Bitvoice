@@ -32,7 +32,7 @@ interface Order {
   customerAddress: string
   items: OrderItem[]
   total: number
-  status: "pending" | "confirmed" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "cancelled"
+  status: "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "cancelled"
   createdAt: string
   estimatedDelivery: string
   paymentMethod: string
@@ -74,7 +74,7 @@ const orderStatuses = [
     description: "Your order is ready and waiting for delivery"
   },
   { 
-    key: "out_for_delivery", 
+    key: "out-for-delivery", 
     label: "Out for Delivery", 
     icon: Truck, 
     color: "bg-purple-100 text-purple-800",

@@ -49,7 +49,7 @@ interface Order {
     basePrice: number
   }>
   total: number
-  status: "pending" | "confirmed" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "cancelled"
+  status: "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "cancelled"
   createdAt: string
   estimatedDelivery: string
   paymentMethod: string
@@ -87,7 +87,7 @@ const orderStatuses = [
     progress: 75
   },
   { 
-    key: "out_for_delivery", 
+    key: "out-for-delivery", 
     label: "Out for Delivery", 
     icon: Truck, 
     color: "bg-purple-100 text-purple-800",
@@ -205,7 +205,7 @@ export default function OrderTrackingPage() {
     pending: orders.filter(o => o.status === "pending").length,
     preparing: orders.filter(o => o.status === "preparing").length,
     ready: orders.filter(o => o.status === "ready").length,
-    outForDelivery: orders.filter(o => o.status === "out_for_delivery").length,
+    outForDelivery: orders.filter(o => o.status === "out-for-delivery").length,
     delivered: orders.filter(o => o.status === "delivered").length,
   }
 
