@@ -1,28 +1,20 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getOrderById, updateOrder } from "@/lib/orders-storage"
+import { NextResponse } from "next/server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const order = getOrderById(params.id)
+// This should match the orders array from the main orders route
+// In a real app, you'd use a shared database
+const orders: any[] = []
 
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
-
-  return NextResponse.json(order)
-}
-
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const updates = await request.json()
-    const updatedOrder = updateOrder(params.id, updates)
+    const order = orders.find(o => o.id === params.id)
 
-    if (!updatedOrder) {
+    if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    return NextResponse.json(updatedOrder)
+    return NextResponse.json(order)
   } catch (error) {
-    console.error("Failed to update order:", error)
-    return NextResponse.json({ error: "Failed to update order" }, { status: 500 })
+    console.error("Error fetching order:", error)
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 })
   }
 }

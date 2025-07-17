@@ -15,41 +15,132 @@ import { useCartStore } from "@/lib/store"
 import { toast } from "sonner"
 import { useNotifications } from "@/components/providers/notification-provider"
 
+// Default products data for the homepage
+const defaultPizzas = [
+  {
+    id: 1,
+    name: "Margherita Classic",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/905847/pexels-photo-905847.jpeg",
+    available: true,
+  },
+  {
+    id: 2,
+    name: "Pepperoni Supreme",
+    description: "Pepperoni, mozzarella cheese, tomato sauce",
+    basePrice: 15.99,
+    category: "pizza", 
+    type: "non-vegetarian",
+    image: "https://images.pexels.com/photos/1653877/pexels-photo-1653877.jpeg",
+    available: true,
+  },
+  {
+    id: 3,
+    name: "Veggie Delight",
+    description: "Bell peppers, mushrooms, onions, olives",
+    basePrice: 14.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/708587/pexels-photo-708587.jpeg",
+    available: true,
+  },
+  {
+    id: 4,
+    name: "Margarita",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/365459/pexels-photo-365459.jpeg",
+    available: true,
+  },
+  {
+    id: 5,
+    name: "California Pizza",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/1049626/pexels-photo-1049626.jpeg  ",
+    available: true,
+  },
+  {
+    id: 6,
+    name: "New York Style Pizza",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/280453/pexels-photo-280453.jpeg",
+    available: true,
+  },
+  {
+    id: 7,
+    name: "Cheese Pizza",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg",
+    available: true,
+  }
+]
+
+const defaultDrinks = [
+  {
+    id: 5,
+    name: "Coca Cola",
+    description: "Classic refreshing cola drink",
+    basePrice: 2.99,
+    category: "drink",
+    type: "beverage",
+    image: "https://images.pexels.com/photos/39720/pexels-photo-39720.jpeg",
+    available: true,
+  },
+  {
+    id: 6,
+    name: "Fresh Orange Juice",
+    description: "Freshly squeezed orange juice",
+    basePrice: 3.99,
+    category: "drink",
+    type: "beverage",
+    image: "https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg",
+    available: true,
+  },
+  {
+    id: 7,
+    name: "Sprite",
+    description: "Classic refreshing sprite drink",
+    basePrice: 3.99,
+    category: "drink",
+    type: "beverage",
+    image: "https://images.pexels.com/photos/31332092/pexels-photo-31332092.jpeg",
+    available: true,
+  },
+]
+
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [pizzas, setPizzas] = useState<any[]>([])
-  const [drinks, setDrinks] = useState<any[]>([])
+  const [pizzas, setPizzas] = useState<any[]>(defaultPizzas)
+  const [drinks, setDrinks] = useState<any[]>(defaultDrinks)
   const [showStoreInfo, setShowStoreInfo] = useState(false)
   const { addItem, items } = useCartStore()
   const cartItems = items.reduce((total, item) => total + item.quantity, 0)
   const notifications = useNotifications()
 
   useEffect(() => {
-    fetchProducts()
     // Trigger store info slide-in animation after a short delay
     const timer = setTimeout(() => {
       setShowStoreInfo(true)
     }, 800)
-    return () => clearTimeout(timer)
-  }, [])
 
-  const fetchProducts = async () => {
-    try {
-      const [pizzaResponse, drinkResponse] = await Promise.all([
-        fetch("/api/products?category=pizza&available=true"),
-        fetch("/api/products?category=drink&available=true"),
-      ])
-
-      const pizzaData = await pizzaResponse.json()
-      const drinkData = await drinkResponse.json()
-
-      console.log("Homepage - Loaded pizzas:", pizzaData.length, "drinks:", drinkData.length)
-      setPizzas(pizzaData)
-      setDrinks(drinkData)
-    } catch (error) {
-      console.error("Failed to fetch products:", error)
+    return () => {
+      clearTimeout(timer)
     }
-  }
+  }, [])
 
   const filteredPizzas = pizzas.filter((pizza) => pizza.name?.toLowerCase().includes(searchTerm.toLowerCase()))
 
@@ -109,7 +200,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/placeholder.jpg"
+                  src="https://images.unsplash.com/photo-1563245738-9169ff58eccf?q=80&w=1147&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Pizza Restaurant Interior"
                   fill
                   className="object-cover"
@@ -118,7 +209,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/placeholder.jpg"
+                  src="https://images.unsplash.com/photo-1489564239502-7a532064e1c2?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Fresh Pizzas"
                   fill
                   className="object-cover"
@@ -127,7 +218,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/placeholder.jpg"
+                  src="https://images.unsplash.com/photo-1672596467694-65f215f9b5fa?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Delicious Pizza"
                   fill
                   className="object-cover"
@@ -136,7 +227,7 @@ export default function HomePage() {
               </div>
               <div className="relative h-24 md:h-32 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
                 <ImageWithFallback
-                  src="/placeholder.jpg"
+                  src="https://images.unsplash.com/photo-1494346480775-936a9f0d0877?q=80&w=1116&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                   alt="Restaurant Ambiance"
                   fill
                   className="object-cover"

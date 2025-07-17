@@ -1,10 +1,63 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getProductById, updateProduct, deleteProduct } from "@/lib/vercel-db"
+import { NextResponse } from "next/server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// Static products data
+const products = [
+  {
+    id: 1,
+    name: "Margherita Classic",
+    description: "Fresh mozzarella, tomato sauce, basil leaves",
+    basePrice: 12.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/905847/pexels-photo-905847.jpeg",
+    available: true,
+  },
+  {
+    id: 2,
+    name: "Pepperoni Supreme",
+    description: "Pepperoni, mozzarella cheese, tomato sauce",
+    basePrice: 15.99,
+    category: "pizza",
+    type: "non-vegetarian",
+    image: "https://images.pexels.com/photos/1653877/pexels-photo-1653877.jpeg",
+    available: true,
+  },
+  {
+    id: 3,
+    name: "Veggie Delight",
+    description: "Bell peppers, mushrooms, onions, olives",
+    basePrice: 14.99,
+    category: "pizza",
+    type: "vegetarian",
+    image: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg",
+    available: true,
+  },
+  {
+    id: 5,
+    name: "Coca Cola",
+    description: "Classic refreshing cola drink",
+    basePrice: 2.99,
+    category: "drink",
+    type: "beverage",
+    image: "https://images.pexels.com/photos/50593/coca-cola-cola-coke-glass-50593.jpeg",
+    available: true,
+  },
+  {
+    id: 6,
+    name: "Fresh Orange Juice",
+    description: "Freshly squeezed orange juice",
+    basePrice: 3.99,
+    category: "drink",
+    type: "beverage",
+    image: "https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg",
+    available: true,
+  },
+]
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const productId = Number.parseInt(params.id)
-    const product = await getProductById(productId)
+    const productId = parseInt(params.id)
+    const product = products.find(p => p.id === productId)
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -14,39 +67,5 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   } catch (error) {
     console.error("Error fetching product:", error)
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const productId = Number.parseInt(params.id)
-    const updates = await request.json()
-    
-    const updatedProduct = await updateProduct(productId, updates)
-
-    if (!updatedProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 })
-    }
-
-    return NextResponse.json(updatedProduct)
-  } catch (error) {
-    console.error("Error updating product:", error)
-    return NextResponse.json({ error: "Failed to update product" }, { status: 500 })
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const productId = Number.parseInt(params.id)
-    const deletedProduct = await deleteProduct(productId)
-
-    if (!deletedProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 })
-    }
-
-    return NextResponse.json(deletedProduct)
-  } catch (error) {
-    console.error("Error deleting product:", error)
-    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 })
   }
 }

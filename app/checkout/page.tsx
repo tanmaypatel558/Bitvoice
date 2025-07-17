@@ -26,21 +26,18 @@ export default function CheckoutPage() {
     address: "",
     city: "",
     state: "",
-    zip: "",
-    instructions: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    cardName: ""
+    zipCode: "",
+    specialInstructions: "",
   })
 
-  const { items, getTotalPrice, clearCart } = useCartStore()
-  const { success, error } = useNotifications()
+  const { items, clearCart } = useCartStore()
+  const notifications = useNotifications()
   const router = useRouter()
 
-  const subtotal = getTotalPrice()
+  // Calculate totals
+  const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0)
   const deliveryFee = deliveryMethod === "delivery" ? 3.99 : 0
-  const tax = subtotal * 0.08
+  const tax = subtotal * 0.08 // 8% tax
   const total = subtotal + deliveryFee + tax
 
   const handleInputChange = (field: string, value: string) => {
@@ -48,388 +45,350 @@ export default function CheckoutPage() {
   }
 
   const validateForm = () => {
-    if (items.length === 0) {
-      error("Your cart is empty")
-      return false
-    }
-
+    const requiredFields = ["firstName", "lastName", "phone"]
     if (deliveryMethod === "delivery") {
-      if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zip) {
-        error("Please fill in all delivery information")
+      requiredFields.push("address", "city", "state", "zipCode")
+    }
+
+    for (const field of requiredFields) {
+      if (!formData[field as keyof typeof formData].trim()) {
+        notifications.error(`Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`)
         return false
       }
     }
 
-    if (paymentMethod === "card") {
-      if (!formData.cardNumber || !formData.expiry || !formData.cvv || !formData.cardName) {
-        error("Please fill in all card information")
-        return false
-      }
+    if (items.length === 0) {
+      notifications.error("Your cart is empty")
+      return false
     }
 
     return true
   }
 
   const handlePlaceOrder = async () => {
-    if (!validateForm()) return
-
-    setIsPlacingOrder(true)
+    if (!validateForm()) {
+      return
+    }
 
     try {
+      setIsPlacingOrder(true)
+
+      // Simulate order placement
       const orderData = {
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        customerPhone: formData.phone,
-        customerAddress: deliveryMethod === "delivery" 
-          ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`
-          : "Store Pickup",
-        items: items.map(item => ({
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          type: item.type,
-          size: item.size,
-          toppings: item.toppings,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image,
-          basePrice: item.basePrice
-        })),
-        total: total,
-        deliveryAddress: deliveryMethod === "delivery" 
-          ? `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`
-          : "Store Pickup",
-        paymentMethod: paymentMethod === "card" ? "Credit Card" : "Cash on Delivery",
-        notes: formData.instructions || undefined
+        customer: formData,
+        items: items,
+        deliveryMethod,
+        paymentMethod,
+        subtotal,
+        deliveryFee,
+        tax,
+        total,
+        status: "confirmed",
+        estimatedDelivery: deliveryMethod === "delivery" ? "30-45 minutes" : "15-20 minutes",
+        createdAt: new Date().toISOString(),
       }
 
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to place order")
-      }
-
-      const newOrder = await response.json()
+      // In a real app, you would send this to your API
+      console.log("Order placed:", orderData)
       
-      // Clear cart after successful order
+      // Generate a mock order ID
+      const orderId = `ORD-${Date.now()}`
+      
+      // Clear the cart
       clearCart()
       
-      // Show success notification
-      success("Order placed successfully!")
+      // Show success message
+      notifications.success("Order placed successfully!", "Order Confirmed")
       
-      // Redirect to order tracking page
-      router.push(`/orders/${newOrder.id}`)
+      // Redirect to order confirmation
+      router.push(`/orders/${orderId}`)
       
-    } catch (err) {
-      console.error("Error placing order:", err)
-      error("Failed to place order. Please try again.")
+    } catch (error) {
+      console.error("Failed to place order:", error)
+      notifications.error("Failed to place order. Please try again.")
     } finally {
       setIsPlacingOrder(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-4">
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+          <div className="container flex h-16 items-center px-4">
             <Link href="/cart">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Cart
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold text-red-600">PizzaHub</h1>
           </div>
+        </header>
+
+        <div className="container px-4 py-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold">Your cart is empty</h1>
+            <p className="text-muted-foreground">Add some items to your cart before checking out</p>
+            <Link href="/">
+              <Button>Continue Shopping</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+        <div className="container flex h-16 items-center px-4">
+          <Link href="/cart">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Cart
+            </Button>
+          </Link>
         </div>
       </header>
 
-      <div className="container px-4 py-8 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+      <div className="container px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Checkout Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Delivery Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Delivery Method
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="delivery" id="delivery" />
-                    <Label htmlFor="delivery">Home Delivery (+$3.99)</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pickup" id="pickup" />
-                    <Label htmlFor="pickup">Store Pickup (Free)</Label>
-                  </div>
-                </RadioGroup>
-              </CardContent>
-            </Card>
-
-            {/* Delivery Address */}
-            {deliveryMethod === "delivery" && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column - Forms */}
+            <div className="space-y-6">
+              {/* Delivery Method */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Delivery Address</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    Delivery Method
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label htmlFor="delivery" className="flex-1 cursor-pointer">
+                        <div className="flex justify-between">
+                          <span>Delivery</span>
+                          <span className="text-sm text-muted-foreground">$3.99</span>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pickup" id="pickup" />
+                      <Label htmlFor="pickup" className="flex-1 cursor-pointer">
+                        <div className="flex justify-between">
+                          <span>Pickup</span>
+                          <span className="text-sm text-muted-foreground">Free</span>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+
+              {/* Customer Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input 
-                        id="firstName" 
-                        placeholder="John" 
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input
+                        id="firstName"
                         value={formData.firstName}
                         onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        placeholder="John"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input 
-                        id="lastName" 
-                        placeholder="Doe" 
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input
+                        id="lastName"
                         value={formData.lastName}
                         onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        placeholder="Doe"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input 
-                      id="phone" 
-                      placeholder="+1 (555) 123-4567" 
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Street Address</Label>
-                    <Input 
-                      id="address" 
-                      placeholder="123 Main Street" 
-                      value={formData.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input 
-                        id="city" 
-                        placeholder="New York" 
-                        value={formData.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state">State</Label>
-                      <Input 
-                        id="state" 
-                        placeholder="NY" 
-                        value={formData.state}
-                        onChange={(e) => handleInputChange("state", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="zip">ZIP Code</Label>
-                      <Input 
-                        id="zip" 
-                        placeholder="10001" 
-                        value={formData.zip}
-                        onChange={(e) => handleInputChange("zip", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="instructions">Delivery Instructions (Optional)</Label>
-                    <Textarea 
-                      id="instructions" 
-                      placeholder="Ring the doorbell, leave at door, etc." 
-                      value={formData.instructions}
-                      onChange={(e) => handleInputChange("instructions", e.target.value)}
+                      placeholder="(555) 123-4567"
                     />
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Store Pickup Info */}
-            {deliveryMethod === "pickup" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              {/* Address Information - Only show for delivery */}
+              {deliveryMethod === "delivery" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Delivery Address</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input 
-                        id="firstName" 
-                        placeholder="John" 
-                        value={formData.firstName}
-                        onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input 
-                        id="lastName" 
-                        placeholder="Doe" 
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input 
-                      id="phone" 
-                      placeholder="+1 (555) 123-4567" 
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="instructions">Special Instructions (Optional)</Label>
-                    <Textarea 
-                      id="instructions" 
-                      placeholder="Any special requests..." 
-                      value={formData.instructions}
-                      onChange={(e) => handleInputChange("instructions", e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Payment Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Payment Method
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card">Credit/Debit Card</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash">Cash on Delivery</Label>
-                  </div>
-                </RadioGroup>
-
-                {paymentMethod === "card" && (
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input 
-                        id="cardNumber" 
-                        placeholder="1234 5678 9012 3456" 
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange("cardNumber", e.target.value)}
+                      <Label htmlFor="address">Street Address *</Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => handleInputChange("address", e.target.value)}
+                        placeholder="123 Main St"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input 
-                          id="expiry" 
-                          placeholder="MM/YY" 
-                          value={formData.expiry}
-                          onChange={(e) => handleInputChange("expiry", e.target.value)}
+                        <Label htmlFor="city">City *</Label>
+                        <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) => handleInputChange("city", e.target.value)}
+                          placeholder="New York"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input 
-                          id="cvv" 
-                          placeholder="123" 
-                          value={formData.cvv}
-                          onChange={(e) => handleInputChange("cvv", e.target.value)}
+                        <Label htmlFor="state">State *</Label>
+                        <Input
+                          id="state"
+                          value={formData.state}
+                          onChange={(e) => handleInputChange("state", e.target.value)}
+                          placeholder="NY"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="cardName">Name on Card</Label>
-                      <Input 
-                        id="cardName" 
-                        placeholder="John Doe" 
-                        value={formData.cardName}
-                        onChange={(e) => handleInputChange("cardName", e.target.value)}
+                      <Label htmlFor="zipCode">ZIP Code *</Label>
+                      <Input
+                        id="zipCode"
+                        value={formData.zipCode}
+                        onChange={(e) => handleInputChange("zipCode", e.target.value)}
+                        placeholder="10001"
                       />
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Cart Items */}
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+              {/* Special Instructions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Special Instructions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={formData.specialInstructions}
+                    onChange={(e) => handleInputChange("specialInstructions", e.target.value)}
+                    placeholder="Any special requests or delivery instructions..."
+                    className="min-h-[100px]"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Payment Method */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2" />
+                    Payment Method
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="card" id="card" />
+                      <Label htmlFor="card" className="cursor-pointer">Credit/Debit Card</Label>
                     </div>
-                  ))}
-                </div>
-                <Separator />
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Delivery Fee</span>
-                  <span>${deliveryFee.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="cash" id="cash" />
+                      <Label htmlFor="cash" className="cursor-pointer">Cash on Delivery</Label>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+            </div>
 
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-4">
-                  <Clock className="h-4 w-4" />
-                  <span>Estimated delivery: 25-35 minutes</span>
-                </div>
+            {/* Right Column - Order Summary */}
+            <div>
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Order Items */}
+                  <div className="space-y-3">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.size} • Qty: {item.quantity}
+                          </p>
+                          {item.toppings && item.toppings.length > 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              Toppings: {item.toppings.join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                <Button 
-                  className="w-full" 
-                  size="lg" 
-                  onClick={handlePlaceOrder}
-                  disabled={isPlacingOrder || items.length === 0}
-                >
-                  {isPlacingOrder ? "Placing Order..." : "Place Order"}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Separator />
+
+                  {/* Order Totals */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    {deliveryMethod === "delivery" && (
+                      <div className="flex justify-between">
+                        <span>Delivery Fee</span>
+                        <span>${deliveryFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Tax</span>
+                      <span>${tax.toFixed(2)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span>${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Estimated Time */}
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span>
+                      Estimated {deliveryMethod}: {deliveryMethod === "delivery" ? "30-45" : "15-20"} minutes
+                    </span>
+                  </div>
+
+                  {/* Place Order Button */}
+                  <Button
+                    onClick={handlePlaceOrder}
+                    disabled={isPlacingOrder}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {isPlacingOrder ? "Placing Order..." : `Place Order - $${total.toFixed(2)}`}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>

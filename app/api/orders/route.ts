@@ -1,29 +1,30 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getAllOrders, createOrder, filterOrders } from "@/lib/orders-storage"
+import { NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const status = searchParams.get("status")
-  const customerId = searchParams.get("customerId")
+// Simple in-memory orders storage
+let orders: any[] = []
 
-  const filteredOrders = filterOrders({ status: status || undefined, customerId: customerId || undefined })
-
-  return NextResponse.json(filteredOrders)
+export async function GET() {
+  return NextResponse.json(orders)
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const orderData = await request.json()
     
-    // Add customerId if not provided
-    if (!orderData.customerId) {
-      orderData.customerId = `user_${Date.now()}`
+    // Create new order with ID
+    const newOrder = {
+      id: `ORD-${Date.now()}`,
+      ...orderData,
+      status: "confirmed",
+      createdAt: new Date().toISOString(),
     }
     
-    const newOrder = createOrder(orderData)
+    // Add to orders array
+    orders.push(newOrder)
+    
     return NextResponse.json(newOrder, { status: 201 })
   } catch (error) {
-    console.error("Failed to create order:", error)
+    console.error("Error creating order:", error)
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
   }
 }
