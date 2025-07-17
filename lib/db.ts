@@ -2,8 +2,12 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import type { Product } from './types'
 
-const DATA_DIR = path.join(process.cwd(), 'data')
+// Use /tmp directory for Vercel compatibility
+const DATA_DIR = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'data')
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json')
+
+// In-memory fallback for when file system isn't available
+let memoryProducts: Product[] | null = null
 
 // Default products data
 const defaultProducts: Product[] = [
@@ -84,15 +88,30 @@ async function ensureDataDir() {
   }
 }
 
+// Check if file system is available
+async function isFileSystemAvailable(): Promise<boolean> {
+  try {
+    await ensureDataDir()
+    return true
+  } catch {
+    return false
+  }
+}
+
 // Initialize database with default data if it doesn't exist
 async function initializeDatabase() {
-  await ensureDataDir()
-  
-  try {
-    await fs.access(PRODUCTS_FILE)
-  } catch {
-    // File doesn't exist, create it with default data
-    await fs.writeFile(PRODUCTS_FILE, JSON.stringify(defaultProducts, null, 2))
+  if (await isFileSystemAvailable()) {
+    try {
+      await fs.access(PRODUCTS_FILE)
+    } catch {
+      // File doesn't exist, create it with default data
+      await fs.writeFile(PRODUCTS_FILE, JSON.stringify(defaultProducts, null, 2))
+    }
+  } else {
+    // Use in-memory storage as fallback
+    if (memoryProducts === null) {
+      memoryProducts = [...defaultProducts]
+    }
   }
 }
 
@@ -100,12 +119,17 @@ async function initializeDatabase() {
 export async function getProducts(): Promise<Product[]> {
   await initializeDatabase()
   
-  try {
-    const data = await fs.readFile(PRODUCTS_FILE, 'utf8')
-    return JSON.parse(data)
-  } catch (error) {
-    console.error('Error reading products:', error)
-    return defaultProducts
+  if (await isFileSystemAvailable()) {
+    try {
+      const data = await fs.readFile(PRODUCTS_FILE, 'utf8')
+      return JSON.parse(data)
+    } catch (error) {
+      console.warn('Error reading products from file, using memory:', error)
+      return memoryProducts || defaultProducts
+    }
+  } else {
+    // Use in-memory storage
+    return memoryProducts || defaultProducts
   }
 }
 
@@ -164,10 +188,19 @@ export async function deleteProduct(id: number): Promise<Product | null> {
   return deletedProduct
 }
 
-// Save products to file
+// Save products to file or memory
 async function saveProducts(products: Product[]): Promise<void> {
-  await ensureDataDir()
-  await fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 2))
+  if (await isFileSystemAvailable()) {
+    try {
+      await fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 2))
+    } catch (error) {
+      console.warn('Failed to save to file, using memory:', error)
+      memoryProducts = [...products]
+    }
+  } else {
+    // Use in-memory storage
+    memoryProducts = [...products]
+  }
 }
 
 // Filter products by criteria
