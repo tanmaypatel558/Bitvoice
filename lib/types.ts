@@ -45,6 +45,7 @@ export interface Product {
   category: "pizza" | "drink"
   type: "vegetarian" | "non-vegetarian" | "beverage"
   image: string
+  images?: string[] // Additional images for products
   available: boolean
   toppings?: { id: string; name: string; price: number }[]
   sizes?: { id: string; name: string; price: number }[]

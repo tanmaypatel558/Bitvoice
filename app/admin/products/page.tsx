@@ -46,6 +46,7 @@ export default function ProductManagement() {
     category: "pizza" as "pizza" | "drink",
     type: "vegetarian" as "vegetarian" | "non-vegetarian" | "beverage",
     image: "",
+    images: [] as string[],
     available: true,
     toppings: defaultToppings,
     sizes: defaultSizes,
@@ -66,28 +67,54 @@ export default function ProductManagement() {
   }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = event.target.files
+    if (!files || files.length === 0) return
 
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData()
+        formData.append("file", file)
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          return data.imageUrl
+        }
+        return null
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setFormData((prev) => ({ ...prev, image: data.imageUrl }))
+      const uploadedUrls = await Promise.all(uploadPromises)
+      const validUrls = uploadedUrls.filter(url => url !== null) as string[]
+
+      if (validUrls.length > 0) {
+        setFormData((prev) => ({ 
+          ...prev, 
+          image: prev.image || validUrls[0], // Set first image as main image if none exists
+          images: [...prev.images, ...validUrls]
+        }))
       }
     } catch (error) {
       console.error("Upload failed:", error)
     } finally {
       setUploading(false)
     }
+  }
+
+  const removeImage = (imageUrl: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter(img => img !== imageUrl),
+      image: prev.image === imageUrl ? (prev.images.find(img => img !== imageUrl) || "") : prev.image
+    }))
+  }
+
+  const setMainImage = (imageUrl: string) => {
+    setFormData((prev) => ({ ...prev, image: imageUrl }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,6 +155,7 @@ export default function ProductManagement() {
       category: product.category,
       type: product.type,
       image: product.image,
+      images: product.images || [],
       available: product.available,
       toppings: product.toppings || defaultToppings,
       sizes: product.sizes || defaultSizes,
@@ -159,6 +187,7 @@ export default function ProductManagement() {
       category: "pizza",
       type: "vegetarian",
       image: "",
+      images: [],
       available: true,
       toppings: defaultToppings,
       sizes: defaultSizes,
@@ -291,23 +320,77 @@ export default function ProductManagement() {
 
                 {/* Image Upload */}
                 <div>
-                  <Label htmlFor="image">Product Image</Label>
+                  <Label htmlFor="image">Product Images</Label>
                   <div className="flex items-center space-x-4">
-                    <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+                    <Input 
+                      id="image" 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleImageUpload} 
+                      disabled={uploading} 
+                    />
                     <Button type="button" disabled={uploading}>
                       <Upload className="h-4 w-4 mr-2" />
-                      {uploading ? "Uploading..." : "Upload"}
+                      {uploading ? "Uploading..." : "Upload Images"}
                     </Button>
                   </div>
+                  
+                  {/* Main Image Preview */}
                   {formData.image && (
                     <div className="mt-4">
-                      <Image
-                        src={formData.image || "/placeholder.svg"}
-                        alt="Product preview"
-                        width={200}
-                        height={200}
-                        className="rounded-lg object-cover"
-                      />
+                      <Label className="text-sm font-medium">Main Image</Label>
+                      <div className="relative inline-block">
+                        <Image
+                          src={formData.image || "/placeholder.svg"}
+                          alt="Main product image"
+                          width={200}
+                          height={200}
+                          className="rounded-lg object-cover border-2 border-primary"
+                        />
+                        <Badge className="absolute top-2 left-2 bg-primary">Main</Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Additional Images */}
+                  {formData.images.length > 0 && (
+                    <div className="mt-4">
+                      <Label className="text-sm font-medium">Additional Images ({formData.images.length})</Label>
+                      <div className="grid grid-cols-3 gap-4 mt-2">
+                        {formData.images.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <Image
+                              src={imageUrl}
+                              alt={`Product image ${index + 1}`}
+                              width={150}
+                              height={150}
+                              className="rounded-lg object-cover w-full h-32"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setMainImage(imageUrl)}
+                                  disabled={formData.image === imageUrl}
+                                >
+                                  {formData.image === imageUrl ? "Main" : "Set Main"}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => removeImage(imageUrl)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
