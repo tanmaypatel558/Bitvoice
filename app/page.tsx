@@ -49,12 +49,12 @@ export default function HomePage() {
       name: drink.name,
       category: "drink" as const,
       type: "beverage" as const,
-      size: drink.size || "Regular",
+      size: "Regular",
       toppings: [] as string[],
-      price: drink.basePrice || drink.price,
+      price: drink.basePrice,
       quantity: 1,
       image: drink.image,
-      basePrice: drink.basePrice || drink.price,
+      basePrice: drink.basePrice,
     }
 
     addItem(cartItem)
@@ -142,8 +142,8 @@ export default function HomePage() {
                           height={200}
                           className="w-full h-48 object-cover"
                         />
-                        <Badge className="absolute top-2 right-2 bg-green-500">
-                          {pizza.category === "vegetarian" ? "Veg" : "Non-Veg"}
+                        <Badge className={`absolute top-2 right-2 ${pizza.type === "vegetarian" ? "bg-green-500" : "bg-red-500"}`}>
+                          {pizza.type === "vegetarian" ? "Veg" : "Non-Veg"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -153,16 +153,16 @@ export default function HomePage() {
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                          <span>{pizza.rating}</span>
+                          <span>4.5</span>
                         </div>
                         <div className="flex items-center text-muted-foreground">
                           <Clock className="h-4 w-4 mr-1" />
-                          <span>{pizza.time}</span>
+                          <span>25-30 min</span>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0 flex items-center justify-between">
-                      <span className="text-xl font-bold">${pizza.price}</span>
+                      <span className="text-xl font-bold">${pizza.basePrice}</span>
                       <Link href={`/product/${pizza.id}`}>
                         <Button size="sm">
                           <Plus className="h-4 w-4 mr-1" />
@@ -191,10 +191,10 @@ export default function HomePage() {
                     <CardContent className="p-4">
                       <CardTitle className="text-lg mb-2">{drink.name}</CardTitle>
                       <p className="text-sm text-muted-foreground mb-2">{drink.description}</p>
-                      <Badge variant="outline">{drink.size}</Badge>
+                      <Badge variant="outline">Regular</Badge>
                     </CardContent>
                     <CardFooter className="p-4 pt-0 flex items-center justify-between">
-                      <span className="text-xl font-bold">${drink.price}</span>
+                      <span className="text-xl font-bold">${drink.basePrice}</span>
                       <Button size="sm" onClick={() => handleAddDrink(drink)}>
                         <Plus className="h-4 w-4 mr-1" />
                         Add
